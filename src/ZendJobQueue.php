@@ -37,10 +37,222 @@ if(!class_exists('ZendJobQueue')) {
 
 class ZendJobQueue
 {
-    const OK = 1;
-    const FAILED = 0;
-
-    const STATUS_OK = 1;
+    /**
+     * A HTTP type of job with an absolute URL
+     */
+    const TYPE_HTTP_RELATIVE = 0;
+    /**
+     * A HTTP type of job with a relative URL
+     */
+    const TYPE_HTTP = 1;
+    /**
+     * A SHELL type of job
+     */
+    const TYPE_SHELL = 2;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_TYPE_HTTP_RELATIVE = 1;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_TYPE_HTTP = 2;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_TYPE_SHELL = 4;
+    /**
+     * A low priority job
+     */
+    const PRIORITY_LOW = 0;
+    /**
+     * A normal priority job
+     */
+    const PRIORITY_NORMAL = 1;
+    /**
+     * A high priority job
+     */
+    const PRIORITY_HIGH = 2;
+    /**
+     * An urgent priority job
+     */
+    const PRIORITY_URGENT = 3;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_PRIORITY_LOW = 1;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_PRIORITY_NORMAL = 2;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_PRIORITY_HIGH = 4;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_PRIORITY_URGENT = 8;
+    /**
+     * The job is waiting to be processed
+     */
+    const STATUS_PENDING = 0;
+    /**
+     * The job is waiting for its predecessor's completion
+     */
+    const STATUS_WAITING_PREDECESSOR = 1;
+    /**
+     * The job is executing
+     */
+    const STATUS_RUNNING = 2;
+    /**
+     * Job execution has been completed successfully
+     */
+    const STATUS_COMPLETED = 3;
+    /**
+     * The job was executed and reported its successful completion status
+     */
+    const STATUS_OK = 4;
+    /**
+     * The job execution failed
+     */
+    const STATUS_FAILED = 5;
+    /**
+     * The job was executed but reported failed completion status
+     */
+    const STATUS_LOGICALLY_FAILED = 6;
+    /**
+     * Job execution timeout
+     */
+    const STATUS_TIMEOUT = 7;
+    /**
+     * A logically removed job
+     */
+    const STATUS_REMOVED = 8;
+    /**
+     * The job is scheduled to be executed at some specific time
+     */
+    const STATUS_SCHEDULED = 9;
+    /**
+     * The job execution is suspended
+     */
+    const STATUS_SUSPENDED = 10;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_PENDING = 1;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_WAITING_PREDECESSOR = 2;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_RUNNING = 4;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_COMPLETED = 8;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_OK = 16;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_FAILED = 32;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_LOGICALLY_FAILED = 64;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_TIMEOUT = 128;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_REMOVED = 256;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_SCHEDULED = 512;
+    /**
+     * (No doc, exported with reflection API)
+     */
+    const JOB_STATUS_SUSPENDED = 1024;
+    /**
+     * Disable sorting of result set of getJobsList()
+     */
+    const SORT_NONE = 0;
+    /**
+     * Sort result set of getJobsList() by job id
+     */
+    const SORT_BY_ID = 1;
+    /**
+     * Sort result set of getJobsList() by job type
+     */
+    const SORT_BY_TYPE = 2;
+    /**
+     * Sort result set of getJobsList() by job script name
+     */
+    const SORT_BY_SCRIPT = 3;
+    /**
+     * Sort result set of getJobsList() by application name
+     */
+    const SORT_BY_APPLICATION = 4;
+    /**
+     * Sort result set of getJobsList() by job name
+     */
+    const SORT_BY_NAME = 5;
+    /**
+     * Sort result set of getJobsList() by job priority
+     */
+    const SORT_BY_PRIORITY = 6;
+    /**
+     * Sort result set of getJobsList() by job status
+     */
+    const SORT_BY_STATUS = 7;
+    /**
+     * Sort result set of getJobsList() by job predecessor
+     */
+    const SORT_BY_PREDECESSOR = 8;
+    /**
+     * Sort result set of getJobsList() by job persistence flag
+     */
+    const SORT_BY_PERSISTENCE = 9;
+    /**
+     * Sort result set of getJobsList() by job creation time
+     */
+    const SORT_BY_CREATION_TIME = 10;
+    /**
+     * Sort result set of getJobsList() by job schedule time
+     */
+    const SORT_BY_SCHEDULE_TIME = 11;
+    /**
+     * Sort result set of getJobsList() by job start time
+     */
+    const SORT_BY_START_TIME = 12;
+    /**
+     * Sort result set of getJobsList() by job end time
+     */
+    const SORT_BY_END_TIME = 13;
+    /**
+     * Sort result set of getJobsList() in direct order
+     */
+    const SORT_ASC = 0;
+    /**
+     * Sort result set of getJobsList() in reverse order
+     */
+    const SORT_DESC = 1;
+    /**
+     * Constant to report completion status from the jobs using setCurrentJobStatus()
+     */
+    const OK = 0;
+    /**
+     * Constant to report completion status from the jobs using setCurrentJobStatus()
+     */
+    const FAILED = 1;
 
     private $binding;
 
@@ -68,17 +280,17 @@ class ZendJobQueue
      * @param array $vars An associative array of variables which will be passed to the script. The total data size of this array should not be greater than the size defined in the zend_jobqueue.max_message_size directive.
      * @param mixed $options An associative array of additional options. The elements of this array can define job priority, predecessor, persistence, optional name, additional attributes of HTTP request as HTTP headers, etc.
      *               The following options are supported:
-     *
-     *               "name" - Optional job name
-     *               "priority" - Job priority (see corresponding constants)
-     *               "predecessor" - Integer predecessor job id
-     *               "persistent" - Boolean (keep in history forever)
-     *               "schedule_time" - Time when job should be executed
-     *               "schedule" - CRON-like scheduling command
-     *               "http_headers" - Array of additional HTTP headers
-     *               "job_timeout" - The timeout for the job
-     *               "queue_name" - The queue assigned to the job
-     *               "validate_ssl" - Boolean (validate ssl certificate")
+     *               - "name" - Optional job name
+     *               - "priority" - Job priority (see corresponding constants)
+     *               - "predecessor" - Integer predecessor job id
+     *               - "persistent" - Boolean (keep in history forever)
+     *               - "schedule_time" - Time when job should be executed
+     *               - "schedule" - CRON-like scheduling command
+     *               - "http_headers" - Array of additional HTTP headers
+     *               - "job_timeout" - The timeout for the job
+     *               - "queue_name" - The queue assigned to the job
+     *               - "validate_ssl" - Boolean (validate ssl certificate")
+     * @param bool $legacyWorker set this parameter to true if the worker is running under real Zend Server.
      *
      * @return int A job ID which can be used to retrieve the job status.
      */
@@ -90,17 +302,37 @@ class ZendJobQueue
                 $legacyWorker ? ZendPhpJQ\HTTPJob::CONTENT_TYPE_ZEND_SERVER: ZendPhpJQ\HTTPJob::CONTENT_TYPE_URL_ENCODED
         );
         $job->addHeader('User-Agent', 'Zend Server Job Queue') ;
+        if(isset($options['headers'])) {
+            foreach ($options['headers'] as $key => $value) {
+                $job->addHeader($key, $value) ;
+            }
+        }
         foreach ($vars as $key => $value) {
             $job->addBodyParam($key, $value);
         }
-        // process options
+
         if (isset($options['name'])) {
             $job->setName($options['name']);
         }
-        // TODO: finish all options
-        $job = $this->jobQueue->getDefaultQueue()->scheduleJob($job);
-        return $this->jobQueue->getDefaultQueue()->getId($job);
+        $jobSchedule = null;
+        if(isset($options['schedule'])) {
+            $jobSchedule = new ZendPhpJQ\RecurringSchedule($options['schedule']);
+        }
+        else if(isset($options['schedule_time'])) {
+            $jobSchedule = new DateTime::createFromFormat('Y-m-d H:i:s', $options['schedule']);
+        }
 
+        $jobOptions = new ZendPhpJQ\JobOptions(
+            $options['priority'] ?? null,
+            $options['job_timeout'] ?? null,
+            null,
+            null,
+            $options['persistent'] ?? ZendPhpJQ\JobOptions::PERSIST_OUTPUT_YES,
+            $options['validate_ssl'] ?? null
+        );
+        // TODO: the following options are not supported: `queue_name` and `predecessor`
+        $job = $this->jobQueue->getDefaultQueue()->scheduleJob($job, $jobSchedule, $jobOptions);
+        return $this->jobQueue->getDefaultQueue()->getId($job);
     }
 
     /**

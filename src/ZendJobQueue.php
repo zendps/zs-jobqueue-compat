@@ -361,7 +361,7 @@ if(!class_exists('ZendJobQueue')) {
          *
          * @return array The job variables.
          */
-        public function getCurrentJobParams()
+        public static function getCurrentJobParams()
         {
             return $_POST;
         }
@@ -374,9 +374,9 @@ if(!class_exists('ZendJobQueue')) {
          *
          * @return void
          */
-        public function setCurrentJobStatus(int $completion, string $message = '')
+        public static function setCurrentJobStatus(int $completion, string $message = '')
         {
-            // TODO:
+            http_response_code($completion == self::OK ? 200: 500);
         }
 
         /**
@@ -417,7 +417,7 @@ if(!class_exists('ZendJobQueue')) {
          *
          * @return boolean Return true if the Job Queue Deamon is running, otherwise it returns false.
          */
-        public function isJobQueueDaemonRunning()
+        public static function isJobQueueDaemonRunning()
         {
 
         }
@@ -688,7 +688,7 @@ if(!class_exists('ZendJobQueue')) {
          * Returns the current job ID. Returns NULL if not called within a job context.
          * @return void
          */
-        public function getCurrentJobId()
+        public static function getCurrentJobId()
         {
 
         }

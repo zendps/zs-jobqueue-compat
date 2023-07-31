@@ -535,7 +535,6 @@ class ZendJobQueue
      *
      * @param int    $completion The job completion status (OK or FAILED).
      * @param string $message The optional explanation message; ignored internally
-     * @return void
      */
     public static function setCurrentJobStatus(int $completion, string $message = '')
     {
@@ -553,6 +552,18 @@ class ZendJobQueue
      */
     public function removeJob(int $jobId)
     {
+        foreach ($this->jobQueue->getQueues() as $queue) {
+            foreach ($queue->getJobs() as $job) {
+                if (! $job->getId() === $jobId) {
+                    continue;
+                }
+
+                $queue->cancelJob($job);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

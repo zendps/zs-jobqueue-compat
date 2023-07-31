@@ -26,15 +26,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *
- * @author    Slavey Karadzhov <skaradzhov@perforce.com>
  * @copyright 2023 Zend by Perforce
  * @license   http://www.opensource.org/licenses/mit-license.html  MIT License
  */
 
 use ZendHQ\JobQueue as ZendPhpJQ;
 
-if(!class_exists('ZendJobQueue')) {
-
+if (! class_exists('ZendJobQueue')) {
     class ZendJobQueue
     {
         /**
@@ -256,42 +254,36 @@ if(!class_exists('ZendJobQueue')) {
 
         private $binding;
 
-        /**
-         * @var ZendPhpJQ\JobQueue
-         */
+        /** @var ZendPhpJQ\JobQueue */
         private $jobQueue;
 
         /**
          * Creates a ZendJobQueue object connected to a Job Queue daemon.
-         *
-         * @param string $binding
          */
         public function __construct(string $binding = '')
         {
-            $this->binding = $binding;
+            $this->binding  = $binding;
             $this->jobQueue = new ZendPhpJQ\JobQueue();
         }
 
         /**
          * Creates a new URL based job to make the Job Queue Daemon call given $url with given $vars.
          *
-         *
          * @param string $url An absolute URL of the script to call.
-         * @param array $vars An associative array of variables which will be passed to the script. The total data size of this array should not be greater than the size defined in the zend_jobqueue.max_message_size directive.
-         * @param mixed $options An associative array of additional options. The elements of this array can define job priority, predecessor, persistence, optional name, additional attributes of HTTP request as HTTP headers, etc.
-         *               The following options are supported:
-         *               - "name" - Optional job name
-         *               - "priority" - Job priority (see corresponding constants)
-         *               - "predecessor" - Integer predecessor job id
-         *               - "persistent" - Boolean (keep in history forever)
-         *               - "schedule_time" - Time when job should be executed
-         *               - "schedule" - CRON-like scheduling command
-         *               - "http_headers" - Array of additional HTTP headers
-         *               - "job_timeout" - The timeout for the job
-         *               - "queue_name" - The queue assigned to the job
-         *               - "validate_ssl" - Boolean (validate ssl certificate")
-         * @param bool $legacyWorker set this parameter to true if the worker is running under real Zend Server.
-         *
+         * @param array  $vars An associative array of variables which will be passed to the script. The total data size of this array should not be greater than the size defined in the zend_jobqueue.max_message_size directive.
+         * @param mixed  $options An associative array of additional options. The elements of this array can define job priority, predecessor, persistence, optional name, additional attributes of HTTP request as HTTP headers, etc.
+         *                The following options are supported:
+         *                - "name" - Optional job name
+         *                - "priority" - Job priority (see corresponding constants)
+         *                - "predecessor" - Integer predecessor job id
+         *                - "persistent" - Boolean (keep in history forever)
+         *                - "schedule_time" - Time when job should be executed
+         *                - "schedule" - CRON-like scheduling command
+         *                - "http_headers" - Array of additional HTTP headers
+         *                - "job_timeout" - The timeout for the job
+         *                - "queue_name" - The queue assigned to the job
+         *                - "validate_ssl" - Boolean (validate ssl certificate")
+         * @param bool   $legacyWorker set this parameter to true if the worker is running under real Zend Server.
          * @return int A job ID which can be used to retrieve the job status.
          */
         public function createHttpJob(string $url, array $vars, $options, bool $legacyWorker = false)
@@ -301,10 +293,10 @@ if(!class_exists('ZendJobQueue')) {
                 ZendPhpJQ\HTTPJob::HTTP_METHOD_POST,
                 $legacyWorker ? ZendPhpJQ\HTTPJob::CONTENT_TYPE_ZEND_SERVER : ZendPhpJQ\HTTPJob::CONTENT_TYPE_URL_ENCODED
             );
-            $job->addHeader('User-Agent', 'Zend Server Job Queue') ;
-            if(isset($options['headers'])) {
+            $job->addHeader('User-Agent', 'Zend Server Job Queue');
+            if (isset($options['headers'])) {
                 foreach ($options['headers'] as $key => $value) {
-                    $job->addHeader($key, $value) ;
+                    $job->addHeader($key, $value);
                 }
             }
             foreach ($vars as $key => $value) {
@@ -315,7 +307,7 @@ if(!class_exists('ZendJobQueue')) {
                 $job->setName($options['name']);
             }
             $jobSchedule = null;
-            if(isset($options['schedule'])) {
+            if (isset($options['schedule'])) {
                 $jobSchedule = new ZendPhpJQ\RecurringSchedule($options['schedule']);
             } elseif (isset($options['schedule_time'])) {
                 $jobSchedule = new ZendPhpJQ\ScheduledTime(
@@ -351,8 +343,8 @@ if(!class_exists('ZendJobQueue')) {
 
             // TODO: remap job status
             return [
-                    'status' => $job->getStatus(), // TODO: remap job status
-                    'output' => $job->getOutput()
+                'status' => $job->getStatus(), // TODO: remap job status
+                'output' => $job->getOutput(),
             ];
         }
 
@@ -370,76 +362,63 @@ if(!class_exists('ZendJobQueue')) {
          * Reports job completion status (OK or FAILED) back to the daemon.
          *
          * @param int completion The job completion status (OK or FAILED).
-         * @param string $message The optional explanation message.
-         *
-         * @return void
+         * @param string                                                  $message The optional explanation message.
          */
         public static function setCurrentJobStatus(int $completion, string $message = '')
         {
-            http_response_code($completion == self::OK ? 200: 500);
+            http_response_code($completion == self::OK ? 200 : 500);
         }
 
         /**
          * Removes the job from the queue. Makes all dependent jobs fail. If the job is in progress, it will be finished, but dependent jobs will not be started. For non-existing jobs, the function returns false. Finished jobs are removed from the database.
          *
          * @param int $jobId A job ID
-         * @return boolean The job was removed or not removed.
+         * @return bool The job was removed or not removed.
          */
         public function removeJob(int $jobId)
         {
-
         }
 
         /**
-         *
          * Restart a previously executed Job and all its followers.
          *
          * @param int $jobId A job ID
-         * @return boolean - If the job was restarted or not restarted.
+         * @return bool - If the job was restarted or not restarted.
          */
         public function restartJob(int $jobId)
         {
-
         }
 
         /**
          * Checks if the Job Queue is suspended and returns true or false.
          *
-         * @return boolean A Job Queue status.
+         * @return bool A Job Queue status.
          */
         public function isSuspended()
         {
-
         }
 
         /**
          * Checks if the Job Queue Daemon is running.
          *
-         * @return boolean Return true if the Job Queue Deamon is running, otherwise it returns false.
+         * @return bool Return true if the Job Queue Deamon is running, otherwise it returns false.
          */
         public static function isJobQueueDaemonRunning()
         {
-
         }
 
         /**
          * Suspends the Job Queue so it will accept new jobs, but will not start them. The jobs which were executed during the call to this function will be completed.
-         *
-         * @return void
          */
         public function suspendQueue()
         {
-
         }
 
         /**
          * Resumes the Job Queue so it will schedule and start queued jobs.
-         *
-         * @return void
          */
         public function resumeQueue()
         {
-
         }
 
         /**
@@ -449,7 +428,6 @@ if(!class_exists('ZendJobQueue')) {
          */
         public function getStatistics()
         {
-
         }
 
         /**
@@ -460,17 +438,13 @@ if(!class_exists('ZendJobQueue')) {
          */
         public function getStatisticsByTimespan(int $timeSpan)
         {
-
         }
 
         /**
          * Returns the current value of the configuration option of the Job Queue Daemon.
-         *
-         * @return void
          */
         public function getConfig()
         {
-
         }
 
         /**
@@ -485,12 +459,9 @@ if(!class_exists('ZendJobQueue')) {
 
         /**
          * Re-reads the configuration file of the Job Queue Daemon, and reloads all directives that are reloadable.
-         *
-         * @return void
          */
         public function reloadConfig()
         {
-
         }
 
         /**
@@ -526,23 +497,23 @@ if(!class_exists('ZendJobQueue')) {
             }
 
             return [
-                'id' => $job->getId(),
-                'name' => $job->getJobDefinition()->getName(),
-                'type' => '', // The job type (see self::TYPE_* constants)
-                'status' => $job->getStatus(),
-                'priority' => $job->getJobOptions()->getPriority(),
+                'id'         => $job->getId(),
+                'name'       => $job->getJobDefinition()->getName(),
+                'type'       => '', // The job type (see self::TYPE_* constants)
+                'status'     => $job->getStatus(),
+                'priority'   => $job->getJobOptions()->getPriority(),
                 'persistent' => $job->getJobOptions()->getPersistOutput(),
                 // "script" : The URL or SHELL script name
                 // "predecessor" : The job predecessor
-                'output' => $job->getOutput(),
+                'output'        => $job->getOutput(),
                 'creation_time' => $job->getCreationTime(),
-                'start_time' => $job->getScheduledTime(),
-                'end_time' => $job->getCompletionTime(),
+                'start_time'    => $job->getScheduledTime(),
+                'end_time'      => $job->getCompletionTime(),
 //    *  - "vars" : The input variables or arguments
 //    *  - "http_headers" : The additional HTTP headers for HTTP jobs
 //
 //    *  - "error" : The error output of the job
-                'schedule' => $job->getSchedule(),
+                'schedule'      => $job->getSchedule(),
                 'schedule_time' => $job->getScheduledTime()->format('Y-m-d H:i:s'),
 //    *  - "app_id" : The application name
             ];
@@ -550,38 +521,35 @@ if(!class_exists('ZendJobQueue')) {
 
         /**
          * Returns a list of associative arrays with the properties of the jobs which depend on the job with the given identifier.
-         *
-         * @return void
          */
         public function getDependentJobs()
         {
-
         }
 
         /**
-             * Returns a list of associative arrays with properties of jobs which conform to a given query
+         * Returns a list of associative arrays with properties of jobs which conform to a given query
          *
-             * @param array $filter An associative array with query arguments.
-             * The array may contain the following keys which restrict the resulting list:
-             *  - "app_id" : Query only jobs which belong to the given application
-             *  - "name" : Query only jobs with the given name
-             *  - "script" : Query only jobs with a script name similar to the given one (SQL LIKE)
-             *  - "type" : Query only jobs of the given types (bitset)
-             *  - "priority" : Query only jobs with the given priorities (bitset)
-             *  - "status" : Query only jobs with the given statuses (bitset)
-             *  - "rule_id" : Query only jobs produced by the given scheduling rule
-             *  - "scheduled_before" : Query only jobs scheduled before the given date
-             *  - "scheduled_after" : Query only jobs scheduled after the given date
-             *  - "executed_before" : Query only jobs executed before the given date
-             *  - "executed_after" : Query only jobs executed after the given date
-             *  - "sort_by" : Sort by the given field (see self::SORT_BY_* constants)
-             *  - "sort_direction" : Sort the order (self::SORT_ASC or self::SORT_DESC)
-             *  - "start" : Skip the given number of jobs
-             *  - "count" : Retrieve only the given number of jobs (100 by default)
-             * @param int $total The output parameter which is set to the total number of jobs conforming to the given query, ignoring "start" and "count" fields
-             * @return array A list of jobs with their details
+         * @param array    $filter An associative array with query arguments.
+         *    The array may contain the following keys which restrict the resulting list:
+         *     - "app_id" : Query only jobs which belong to the given application
+         *     - "name" : Query only jobs with the given name
+         *     - "script" : Query only jobs with a script name similar to the given one (SQL LIKE)
+         *     - "type" : Query only jobs of the given types (bitset)
+         *     - "priority" : Query only jobs with the given priorities (bitset)
+         *     - "status" : Query only jobs with the given statuses (bitset)
+         *     - "rule_id" : Query only jobs produced by the given scheduling rule
+         *     - "scheduled_before" : Query only jobs scheduled before the given date
+         *     - "scheduled_after" : Query only jobs scheduled after the given date
+         *     - "executed_before" : Query only jobs executed before the given date
+         *     - "executed_after" : Query only jobs executed after the given date
+         *     - "sort_by" : Sort by the given field (see self::SORT_BY_* constants)
+         *     - "sort_direction" : Sort the order (self::SORT_ASC or self::SORT_DESC)
+         *     - "start" : Skip the given number of jobs
+         *     - "count" : Retrieve only the given number of jobs (100 by default)
+         * @param null|int $total The output parameter which is set to the total number of jobs conforming to the given query, ignoring "start" and "count" fields
+         * @return array A list of jobs with their details
          */
-        public function getJobsList(array $filter = array(), $total = null)
+        public function getJobsList(array $filter = [], $total = null)
         {
             $results = [];
             foreach ($this->getQueues() as $queue) {
@@ -607,12 +575,9 @@ if(!class_exists('ZendJobQueue')) {
 
         /**
          * Returns an array of application names known by the daemon.
-         *
-         * @return void
          */
         public function getApplications()
         {
-
         }
 
         /**
@@ -635,76 +600,60 @@ if(!class_exists('ZendJobQueue')) {
          */
         public function getSchedulingRules()
         {
-
         }
 
         /**
          * Returns an associative array with the properties of the scheduling rule identified by the given argument. The list of the properties is the same as in getSchedulingRules().
-         * @return void
          */
         public function getSchedulingRule()
         {
-
         }
 
         /**
          * Deletes the scheduling rule identified by the given $rule_id and scheduled jobs created by this rule.
-         * @return void
          */
         public function deleteSchedulingRule()
         {
-
         }
 
         /**
          * Suspends the scheduling rule identified by given $rule_id and deletes scheduled jobs created by this rule.
-         * @return void
          */
         public function suspendSchedulingRule()
         {
-
         }
-
 
         /**
          * Resumes the scheduling rule identified by given $rule_id and creates a corresponding scheduled job.
-         * @return void
          */
         public function resumeSchedulingRule()
         {
-
         }
 
         /**
          * Updates and reschedules the existing scheduling rule.
-         * @return void
          */
         public function updateSchedulingRule()
         {
-
         }
 
         /**
          * Returns the current job ID. Returns NULL if not called within a job context.
-         * @return void
          */
         public static function getCurrentJobId()
         {
-
         }
 
         /**
          * Get Job By Id
          *
-         * @param int $jobId
          * @return ZendPhpJQ\Job|null
          */
         private function getJobById(int $jobId)
         {
             foreach ($this->getQueues() as $queue) {
                 try {
-                    $job = $queue->getJob($jobId);
-                    return $job;
+                    return $queue->getJob($jobId);
                 } catch (ZendPhpJQ\InvalidArgument $ex) {
                 }
             }
@@ -712,5 +661,4 @@ if(!class_exists('ZendJobQueue')) {
             return null;
         }
     }
-
 } // if class exists

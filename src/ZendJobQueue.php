@@ -505,6 +505,7 @@ class ZendJobQueue
      *
      * @param int $jobId A job ID.
      * @return array The array contains status, completion status and output of the job.
+     * @todo Remap job status returned to internal constants
      */
     public function getJobStatus(int $jobId)
     {
@@ -513,7 +514,6 @@ class ZendJobQueue
             return [];
         }
 
-        // TODO: remap job status
         return [
             'status' => $job->getStatus(), // TODO: remap job status
             'output' => $job->getOutput(),
@@ -534,7 +534,8 @@ class ZendJobQueue
      * Reports job completion status (OK or FAILED) back to the daemon.
      *
      * @param int    $completion The job completion status (OK or FAILED).
-     * @param string $message The optional explanation message.
+     * @param string $message The optional explanation message; ignored internally
+     * @return void
      */
     public static function setCurrentJobStatus(int $completion, string $message = '')
     {

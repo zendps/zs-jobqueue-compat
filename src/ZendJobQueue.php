@@ -35,35 +35,49 @@ use ZendHQ\JobQueue as ZendPhpJQ;
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 class ZendJobQueue
 {
+    // Job types
+
     /**
-     * A HTTP type of job with an absolute URL
+     * An HTTP job with a relative URL
      */
     public const TYPE_HTTP_RELATIVE = 0;
 
     /**
-     * A HTTP type of job with a relative URL
+     * An HTTP job with an absolute URL
      */
     public const TYPE_HTTP = 1;
 
     /**
-     * A SHELL type of job
+     * A PHP-backed CLI job
      */
-    public const TYPE_SHELL = 2;
+    public const TYPE_CLI_PHP = 2;
 
     /**
-     * (No doc, exported with reflection API)
+     * A CLI job
+     */
+    public const TYPE_CLI = 3;
+
+    /**
+     * A shell job
+     */
+    public const TYPE_SHELL = 3;
+
+    /**
+     * An HTTP job with a relative URL
      */
     public const JOB_TYPE_HTTP_RELATIVE = 1;
 
     /**
-     * (No doc, exported with reflection API)
+     * An HTTP job with an absolute URL
      */
     public const JOB_TYPE_HTTP = 2;
 
     /**
-     * (No doc, exported with reflection API)
+     * A shell-based job
      */
-    public const JOB_TYPE_SHELL = 4;
+    public const JOB_TYPE_SHELL = 8;
+
+    // Job priorities
 
     /**
      * A low priority job
@@ -86,24 +100,111 @@ class ZendJobQueue
     public const PRIORITY_URGENT = 3;
 
     /**
-     * (No doc, exported with reflection API)
+     * A low priority job
      */
     public const JOB_PRIORITY_LOW = 1;
 
     /**
-     * (No doc, exported with reflection API)
+     * A normal priority job
      */
     public const JOB_PRIORITY_NORMAL = 2;
 
     /**
-     * (No doc, exported with reflection API)
+     * A high priority job
      */
     public const JOB_PRIORITY_HIGH = 4;
 
     /**
-     * (No doc, exported with reflection API)
+     * An urgent priority job
      */
     public const JOB_PRIORITY_URGENT = 8;
+
+    // Job statuses
+
+    /**
+     * The job is waiting to be processed
+     */
+    public const JOB_STATUS_PENDING = 1;
+
+    /**
+     * The job is waiting for its predecessor's completion
+     */
+    public const JOB_STATUS_WAITING_PREDECESSOR = 2;
+
+    /**
+     * The job is executing
+     */
+    public const JOB_STATUS_RUNNING = 4;
+
+    /**
+     * Job execution has been completed successfully
+     */
+    public const JOB_STATUS_COMPLETED = 8;
+
+    /**
+     * The job was executed and reported its successful completion status
+     */
+    public const JOB_STATUS_OK = 16;
+
+    /**
+     * The job execution failed
+     */
+    public const JOB_STATUS_FAILED = 32;
+
+    /**
+     * The job was executed but reported failed completion status
+     */
+    public const JOB_STATUS_LOGICALLY_FAILED = 64;
+
+    /**
+     * Job execution timeout
+     */
+    public const JOB_STATUS_TIMEOUT = 128;
+
+    /**
+     * A logically removed job
+     */
+    public const JOB_STATUS_REMOVED = 256;
+
+    /**
+     * The job is scheduled to be executed at some specific time
+     */
+    public const JOB_STATUS_SCHEDULED = 512;
+
+    /**
+     * The job execution is suspended
+     */
+    public const JOB_STATUS_SUSPENDED = 1024;
+
+    /**
+     * The job execution failed on the backend
+     */
+    public const JOB_STATUS_FAILED_BACKEND = 2048;
+
+    /**
+     * The job execution failed due to the target URL being inaccessible
+     */
+    public const JOB_STATUS_FAILED_URL = 4096;
+
+    /**
+     * The job execution failed due to the runtime not matching
+     */
+    public const JOB_STATUS_FAILED_RUNTIME = 8192;
+
+    /**
+     * The job execution failed to start
+     */
+    public const JOB_STATUS_FAILED_START = 16384;
+
+    /**
+     * The job execution failed due to the predecessor job failing
+     */
+    public const JOB_STATUS_FAILED_PREDECESSOR = 32768;
+
+    /**
+     * The job execution failed because it was aborted
+     */
+    public const JOB_STATUS_FAILED_ABORTED = 65536;
 
     /**
      * The job is waiting to be processed
@@ -161,59 +262,41 @@ class ZendJobQueue
     public const STATUS_SUSPENDED = 10;
 
     /**
-     * (No doc, exported with reflection API)
+     * The job execution failed on the backend
      */
-    public const JOB_STATUS_PENDING = 1;
+    public const STATUS_FAILED_BACKEND = 11;
 
     /**
-     * (No doc, exported with reflection API)
+     * The job execution failed due to the target URL being inaccessible
      */
-    public const JOB_STATUS_WAITING_PREDECESSOR = 2;
+    public const STATUS_FAILED_URL = 12;
 
     /**
-     * (No doc, exported with reflection API)
+     * The job execution failed due to the runtime not matching
      */
-    public const JOB_STATUS_RUNNING = 4;
+    public const STATUS_FAILED_RUNTIME = 13;
 
     /**
-     * (No doc, exported with reflection API)
+     * The job execution failed to start
      */
-    public const JOB_STATUS_COMPLETED = 8;
+    public const STATUS_FAILED_START = 14;
 
     /**
-     * (No doc, exported with reflection API)
+     * The job execution failed due to the predecessor job failing
      */
-    public const JOB_STATUS_OK = 16;
+    public const STATUS_FAILED_PREDECESSOR = 15;
 
     /**
-     * (No doc, exported with reflection API)
+     * The job execution failed because it was aborted
      */
-    public const JOB_STATUS_FAILED = 32;
+    public const STATUS_FAILED_ABORTED = 16;
+
+    // Sorting options
 
     /**
-     * (No doc, exported with reflection API)
+     * Disable sorting of result set of getJobsList()
      */
-    public const JOB_STATUS_LOGICALLY_FAILED = 64;
-
-    /**
-     * (No doc, exported with reflection API)
-     */
-    public const JOB_STATUS_TIMEOUT = 128;
-
-    /**
-     * (No doc, exported with reflection API)
-     */
-    public const JOB_STATUS_REMOVED = 256;
-
-    /**
-     * (No doc, exported with reflection API)
-     */
-    public const JOB_STATUS_SCHEDULED = 512;
-
-    /**
-     * (No doc, exported with reflection API)
-     */
-    public const JOB_STATUS_SUSPENDED = 1024;
+    public const SORT_JOB_NONE = 0;
 
     /**
      * Disable sorting of result set of getJobsList()
@@ -285,6 +368,8 @@ class ZendJobQueue
      */
     public const SORT_BY_END_TIME = 13;
 
+    // Sort direction
+
     /**
      * Sort result set of getJobsList() in direct order
      */
@@ -294,6 +379,8 @@ class ZendJobQueue
      * Sort result set of getJobsList() in reverse order
      */
     public const SORT_DESC = 1;
+
+    // Other constants
 
     /**
      * Constant to report completion status from the jobs using setCurrentJobStatus()

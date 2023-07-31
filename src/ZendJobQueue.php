@@ -625,33 +625,74 @@ class ZendJobQueue
      * jobs, number of failed jobs, number of logically failed jobs, number of
      * waiting jobs, number of currently running jobs, etc.
      *
+     * The ZendHQ implementation does not support this. As such, this method
+     * returns an empty array, and emits an E_USER_WARNING.
+     *
      * @return array Associative array.
      */
     public function getStatistics()
     {
+        error_log(
+            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
+            E_USER_WARNING
+        );
+
+        return [];
     }
 
     /**
      * See getStatistics API. Only checks jobs whose status were changed in a given timespan (seconds).
+     *
+     * The ZendHQ implementation does not support this. As such, this method
+     * returns an empty array, and emits an E_USER_WARNING.
      *
      * @param int $timeSpan The time span in seconds.
      * @return array Associative array.
      */
     public function getStatisticsByTimespan(int $timeSpan)
     {
+        error_log(
+            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
+            E_USER_WARNING
+        );
+
+        return [];
     }
 
     /**
      * Returns the current value of the configuration option of the Job Queue Daemon.
+     *
+     * The ZendHQ implementation does not support this. As such, this method
+     * returns an empty array, and emits an E_USER_WARNING.
      */
     public function getConfig()
     {
+        error_log(
+            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
+            E_USER_WARNING
+        );
+
+        return [];
     }
 
     /**
      * Returns the list of available queues.
      *
      * @return array
+     * @todo Need to munge the Queue instances into associative array of:
+     *     - queue name => 
+     *       - id
+     *       - name
+     *       - priority
+     *       - status
+     *       - max_http_jobs
+     *       - max_wait_time
+     *       - http_connection_timeout
+     *       - http_job_timeout
+     *       - http_job_retry_count
+     *       - http_job_retry_timeout
+     *       - running_jobs_count
+     *       - pending_jobs_count
      */
     public function getQueues()
     {
@@ -660,9 +701,15 @@ class ZendJobQueue
 
     /**
      * Re-reads the configuration file of the Job Queue Daemon, and reloads all directives that are reloadable.
+     *
+     * This is a no-op for the polyfill.
      */
     public function reloadConfig()
     {
+        error_log(
+            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
+            E_USER_WARNING
+        );
     }
 
     /**
@@ -723,9 +770,20 @@ class ZendJobQueue
     /**
      * Returns a list of associative arrays with the properties of the jobs
      * which depend on the job with the given identifier.
+     *
+     * The ZendHQ implementation does not support this. As such, this method
+     * returns an empty array, and emits an E_USER_WARNING.
+     *
+     * @return array
      */
     public function getDependentJobs()
     {
+        error_log(
+            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
+            E_USER_WARNING
+        );
+
+        return [];
     }
 
     /**
@@ -779,9 +837,20 @@ class ZendJobQueue
 
     /**
      * Returns an array of application names known by the daemon.
+     *
+     * The ZendHQ implementation does not support this. As such, this method
+     * returns an empty array, and emits an E_USER_WARNING.
+     *
+     * @return array
      */
     public function getApplications()
     {
+        error_log(
+            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
+            E_USER_WARNING
+        );
+
+        return [];
     }
 
     /**

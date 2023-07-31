@@ -592,6 +592,16 @@ class ZendJobQueue
      */
     public static function isJobQueueDaemonRunning()
     {
+        try {
+            $queue = $this->jobQueue->getDefaultQueue();
+            $queue->refresh();
+        } catch (ZendPhpJQ\Exception\NetworkError $e) {
+            return false;
+        } catch (ZendPhpJQ\Exception\LicenseError $e) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

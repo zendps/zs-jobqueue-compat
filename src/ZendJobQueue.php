@@ -469,7 +469,17 @@ class ZendJobQueue
             );
         }
 
-        // warning: the following options are not supported: `queue_name` and `predecessor`
+        if (isset($options['predecessor']) && ! empty($options['predecessor'])) {
+            error_log(
+                sprintf(
+                    'Job submission with url "%s" provides a "predecessor" option; '
+                    . 'predecessors are not supported in ZendHQ JobQueue at this time',
+                    $url
+                ),
+                E_USER_WARNING
+            );
+        }
+
         $jobOptions = new ZendPhpJQ\JobOptions(
             $options['priority'] ?? null,
             $options['job_timeout'] ?? null,
@@ -479,7 +489,15 @@ class ZendJobQueue
             $options['validate_ssl'] ?? null
         );
 
-        return $this->jobQueue->getDefaultQueue()->scheduleJob($job, $jobSchedule, $jobOptions)->getId();
+        if (isset($options['queue_name']) && ! empty($options['queue_name'])) {
+            $queue = $this->jobQueue->hasQueue($options['queue_name'])
+                ? $this->jobQueue->addQueue($options['queue_name'])
+                : $this->jobQueue->getQueue($options['queue_name']);
+        } else {
+            $queue = $this->jobQueue->getDefaultQueue();
+        }
+
+        return $queue->scheduleJob($job, $jobSchedule, $jobOptions)->getId();
     }
 
     /**

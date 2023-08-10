@@ -431,6 +431,7 @@ class ZendJobQueue
     public static function setCurrentJobStatus(int $completion, string $message = '')
     {
         http_response_code($completion === self::OK ? 200 : 500);
+        header('X-Job-Queue-Status: '. $completion);
     }
 
     /**

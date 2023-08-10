@@ -781,27 +781,26 @@ class ZendJobQueue
      */
     public function getQueues()
     {
-        $queueNames = $this->jobQueue->getQueues();
         $queues     = [];
-        foreach ($queueNames as $name) {
-            $queue       = $this->jobQueue->getQueue($name);
+        foreach ($this->jobQueue->getQueues() as $queue) {
+            $name = $queue->getName();
             $definition  = $queue->getDefinition();
             $defaults    = $definition->getDefaultJobOptions();
             $timeout     = $defaults->getTimeout();
             $retries     = $defaults->getAllowedRetries();
             $waitTime    = $defaults->getRetryWaitTime();
             $jobs        = $queue->getJobs();
-            $runningJobs = array_filter($jobs, function (Job $job): bool {
+            $runningJobs = array_filter($jobs, function (ZendPhpJQ\Job $job): bool {
                 return $job->getStatus() === ZendPhpJQ\Job::STATUS_RUNNING;
             });
-            $pendingJobs = array_filter($jobs, function (Job $job): bool {
+            $pendingJobs = array_filter($jobs, function (ZendPhpJQ\Job $job): bool {
                 return $job->getStatus() === ZendPhpJQ\Job::STATUS_SCHEDULED;
             });
 
-            $queue[$name] = [
+            $queues[$name] = [
                 'id'                      => $queue->getId(),
                 'name'                    => $name,
-                'priority'                => $this->mapZendHQPriorityToZendServerPriority($queue->getPriority()),
+                'priority'                => $this->mapZendHQPriorityToZendServerPriority($definition->getPriority()),
                 'status'                  => $this->mapQueueStatusToConstant($queue),
                 'max_http_jobs'           => -1,
                 'max_wait_time'           => ($timeout * $retries) + (($retries - 1) * $waitTime),
@@ -938,7 +937,7 @@ class ZendJobQueue
         $jobs = $this->sliceJobs($jobs, $filters);
 
         // Munge to expected array information
-        return array_map(function (Job $job): array {
+        return array_map(function (ZendPhpJQ\Job $job): array {
             return $this->mapJobToInfoArray($job);
         }, $jobs);
     }
@@ -1094,17 +1093,19 @@ class ZendJobQueue
      */
     private function getJobById(int $jobId): ?ZendPhpJQ\Job
     {
-        foreach ($this->getQueues() as $queue) {
-            try {
-                return $queue->getJob($jobId);
-            } catch (ZendPhpJQ\InvalidArgument $ex) {
+        foreach ($this->jobQueue->getQueues() as $queue) {
+            $jobs = $queue->getJobs();
+            foreach ($jobs as $job) {
+                if($job->getId() === $jobId) {
+                    return $job;
+                }
             }
         }
 
         return null;
     }
 
-    private function createJobOptions(array $options, string $urlOrCommand, bool $isHttpJob): JobOptions
+    private function createJobOptions(array $options, string $urlOrCommand, bool $isHttpJob):  ZendPhpJQ\JobOptions
     {
         $jobOptions = new ZendPhpJQ\JobOptions(
             $options['priority'] ?? null,
@@ -1176,16 +1177,16 @@ class ZendJobQueue
     {
         $priority = $job->getJobOptions()->getPriority();
         switch (true) {
-            case $priority === ZendPhpJQ\Job::PRIORITY_LOW:
+            case $priority === ZendPhpJQ\JobOptions::PRIORITY_LOW:
                 return self::PRIORITY_LOW;
 
-            case $priority === ZendPhpJQ\Job::PRIORITY_NORMAL:
+            case $priority === ZendPhpJQ\JobOptions::PRIORITY_NORMAL:
                 return self::PRIORITY_NORMAL;
 
-            case $priority === ZendPhpJQ\Job::PRIORITY_HIGH:
+            case $priority === ZendPhpJQ\JobOptions::PRIORITY_HIGH:
                 return self::PRIORITY_HIGH;
 
-            case $priority === ZendPhpJQ\Job::PRIORITY_URGENT:
+            case $priority === ZendPhpJQ\JobOptions::PRIORITY_URGENT:
                 return self::PRIORITY_URGENT;
         }
     }
@@ -1194,8 +1195,8 @@ class ZendJobQueue
     {
         $persistOutput = $job->getJobOptions()->getPersistOutput();
         switch (true) {
-            case $persistOutput === ZendPhpJQ\Job::PERSIST_OUTPUT_YES:
-            case $persistOutput === ZendPhpJQ\Job::PERSIST_OUTPUT_ERROR:
+            case $persistOutput === ZendPhpJQ\JobOptions::PERSIST_OUTPUT_YES:
+            case $persistOutput === ZendPhpJQ\JobOptions::PERSIST_OUTPUT_ERROR:
                 return true;
 
             default:
@@ -1271,7 +1272,7 @@ class ZendJobQueue
 
         $info = [
             'id'            => $job->getId(),
-            'name'          => $jobDefinition()->getName(),
+            'name'          => $jobDefinition->getName(),
             'type'          => $this->mapJobTypeToConstant($job),
             'status'        => $this->mapJobStatusToConstant($job),
             'priority'      => $this->mapPriorityToConstant($job),
@@ -1294,7 +1295,7 @@ class ZendJobQueue
         }
 
         if ($jobDefinition instanceof ZendPhpJQ\CLIJob) {
-            $info['vars'] = $jobDefinition()->getEnv();
+            $info['vars'] = $jobDefinition->getEnv();
         }
 
         if ($jobDefinition instanceof ZendPhpJQ\HTTPJob) {
@@ -1330,9 +1331,8 @@ class ZendJobQueue
             return $this->jobQueue->getQueue($filters['queue_name']);
         }
 
-        $queues = [$this->jobQueue->getDefaultQueue()];
-        foreach ($this->jobQueue->getQueues() as $queueName) {
-            $queues[] = $this->jobQueue->getQueue($queueName);
+        foreach ($this->jobQueue->getQueues() as $queue) {
+            $queues[] = $queue;
         }
 
         return $queues;

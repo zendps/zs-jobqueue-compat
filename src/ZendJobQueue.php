@@ -985,12 +985,14 @@ class ZendJobQueue
      */
     public function getSchedulingRules()
     {
-        error_log(
-            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
-            E_USER_WARNING
-        );
+        $rules = [];
+        foreach($this->jobQueue->getDefaultQueue()->getJobs() as $job) {
+            if ($job->getStatus() === ZendPhpJQ\Job::STATUS_SCHEDULED) {
+                $rules[]=  $this->mapJobToInfoArray($job);
+            }
+        }
 
-        return [];
+        return $rules;
     }
 
     /**
@@ -1020,16 +1022,20 @@ class ZendJobQueue
      * The ZendHQ implementation does not support this. As such, this method
      * returns false, and emits an E_USER_WARNING.
      *
-     * @return false
+     * @return boolean
      */
-    public function deleteSchedulingRule()
+    public function deleteSchedulingRule($jobId)
     {
-        error_log(
-            sprintf('%s is unsupported in the Zend Server ZendJobQueue polyfill', __METHOD__),
-            E_USER_WARNING
-        );
+        try {
+            $this->jobQueue->getDefaultQueue()->cancelJob($jobId);
+        }
+        catch(\Exception $e) {
+            // NetworkError - problems communicating with the ZendHQ daemon
+            // InvalidException - the $job object is not valid OR no such job
+            return false;
+        }
 
-        return false;
+        return true;
     }
 
     /**

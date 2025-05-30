@@ -1099,11 +1099,12 @@ class ZendJobQueue
     private function getJobById(int $jobId): ?ZendPhpJQ\Job
     {
         foreach ($this->jobQueue->getQueues() as $queue) {
-            $jobs = $queue->getJobs();
-            foreach ($jobs as $job) {
-                if($job->getId() === $jobId) {
-                    return $job;
-                }
+            try {
+                return $queue->getJob($jobId);
+            }
+            catch(ZendPhpJQ\Exception\InvalidArgument $e) {
+                // If the job is not found, we just continue to the next queue
+                continue;
             }
         }
 

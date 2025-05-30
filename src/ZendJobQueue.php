@@ -580,8 +580,7 @@ class ZendJobQueue
      */
     public function createPhpCliJob(string $script, array $vars, array $options)
     {
-        array_walk($vars, 'escapeshellarg');
-        $command = sprintf('%s %s', $script, implode(' ', $vars));
+        $command = sprintf('%s %s', $script, implode(' ', array_map('escapeshellarg', $vars)));
         return $this->createCliJob($command, $options);
     }
 

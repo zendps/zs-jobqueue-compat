@@ -1290,7 +1290,7 @@ class ZendJobQueue
             'output'        => $job->getOutput(),
             'creation_time' => $job->getCreationTime()->format('c'),
             'start_time'    => $job->getScheduledTime()->format('c'),
-            'end_time'      => $job->getCompletionTime() ? $job->getCompletionTime->format('c') : null,
+            'end_time'      => $job->getCompletionTime() ? $job->getCompletionTime()->format('c') : null,
             'schedule'      => $job->getSchedule(),
             'schedule_time' => $job->getScheduledTime()->format('c'),
             'app_id'        => null,

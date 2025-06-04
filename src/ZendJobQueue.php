@@ -394,6 +394,10 @@ class ZendJobQueue
 
     private ZendPhpJQ\JobQueue $jobQueue;
 
+    private ?ZendPhpJQ\Queue $internalQueue = null;
+
+    private array $internalJobIds = [];
+
     /**
      * Checks if the Job Queue Daemon is running.
      *
@@ -437,13 +441,17 @@ class ZendJobQueue
     /**
      * Returns the current job ID. Returns NULL if not called within a job context.
      *
-     * The ZendHQ implementation does not support this. As such, this method
-     * returns null in all cases
+     * The ZendHQ implementation support this only in CLI context.
+     * In a web context this method returns null.
      *
      * @return null|int
      */
-    public static function getCurrentJobId()
+    public static function getCurrentJobId(): ?int
     {
+        if(getenv('X_ZEND_JOB_ID')) {
+            return (int) getenv('X_ZEND_JOB_ID');
+        }
+
         return null;
     }
 
@@ -513,8 +521,9 @@ class ZendJobQueue
             $job->addBodyParam($key, $value);
         }
 
-        return $this->retrieveQueueFromOptions($options)
-            ->scheduleJob(
+        return
+            $this->scheduleJob(
+                $this->retrieveQueueFromOptions($options),
                 $job,
                 $this->createJobScheduleFromOptions($options),
                 $this->createJobOptions($options, $url, true)
@@ -552,8 +561,9 @@ class ZendJobQueue
             }
         }
 
-        return $this->retrieveQueueFromOptions($options)
-            ->scheduleJob(
+        return
+            $this->scheduleJob(
+                $this->retrieveQueueFromOptions($options),
                 $job,
                 $this->createJobScheduleFromOptions($options),
                 $this->createJobOptions($options, $command, false)
@@ -1094,6 +1104,25 @@ class ZendJobQueue
     }
 
     /**
+     * Schedules a job in the Job Queue Daemon.
+     *
+     * @param ZendPhpJQ\Queue $queue
+     * @param ZendPhpJQ\JobDefinition $job
+     * @param ZendPhpJQ\Schedule|null $schedule
+     * @param ZendPhpJQ\JobOptions $options
+     * @return ZendPhpJQ\Job
+     */
+    private function scheduleJob(ZendPhpJQ\Queue $queue, ZendPhpJQ\JobDefinition $job, ?ZendPhpJQ\Schedule $schedule, ZendPhpJQ\JobOptions $options): ZendPhpJQ\Job
+    {
+        $job = $queue->scheduleJob( $job, $schedule, $options);
+        if ($queue === $this->internalQueue) {
+            $this->internalJobIds[] = $job->getId();
+        }
+
+        return $job;
+    }
+
+    /**
      * Get Job By Id
      */
     private function getJobById(int $jobId): ?ZendPhpJQ\Job
@@ -1162,6 +1191,15 @@ class ZendJobQueue
     private function retrieveQueueFromOptions(array $options): ZendPhpJQ\Queue
     {
         if (! isset($options['queue_name']) || empty($options['queue_name'])) {
+            if($zendJobId = getenv('X_ZEND_JOB_ID')) {
+                // If the X_ZEND_JOB_ID environment variable is set, then this script is running
+                // under the ZendHQ job queue manager. We should create an internal queue to prevent deadlock.
+                if(!$this->internalQueue) {
+                    $this->internalQueue = $this->jobQueue->addQueue(uniqid('intq.'.intval($zendJobId).'.', true));
+                }
+                return $this->internalQueue;
+            }
+
             return $this->jobQueue->getDefaultQueue();
         }
 
@@ -1797,6 +1835,25 @@ class ZendJobQueue
             case $status === ZendPhpJQ\Queue::STATUS_RUNNING:
             default:
                 return self::STATUS_RUNNING;
+        }
+    }
+
+    public function __destruct()
+    {
+        if ($this->internalQueue) {
+            $this->internalQueue->suspend(30);
+
+            // check if there are any jobs in the internal queue that have failed
+            foreach ($this->internalJobIds as $jobId) {
+                $job = $this->getJobStatus($jobId);
+                if(in_array($job['status'], [self::STATUS_FAILED, self::STATUS_LOGICALLY_FAILED])) {
+                    // If the job failed, we keep the internal queue for debugging purposes
+                    return;
+                }
+            }
+
+            $this->jobQueue->deleteQueue($this->internalQueue);
+            $this->internalQueue = null;
         }
     }
 }

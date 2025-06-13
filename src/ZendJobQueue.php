@@ -392,11 +392,12 @@ class ZendJobQueue
      */
     public const FAILED = 1;
 
+    private const DEFAULT_QUEUE_NAME = '__default__';
+    private const INTERNAL_QUEUE_NAME = 'intq';
+    private const ZEND_JOB_RUN_QUEUE = 'X_ZEND_JOB_RUN_QUEUE';
+    private const ZEND_JOB_ID = 'X_ZEND_JOB_ID';
+
     private ZendPhpJQ\JobQueue $jobQueue;
-
-    private ?ZendPhpJQ\Queue $internalQueue = null;
-
-    private array $internalJobIds = [];
 
     /**
      * Checks if the Job Queue Daemon is running.
@@ -448,8 +449,8 @@ class ZendJobQueue
      */
     public static function getCurrentJobId(): ?int
     {
-        if(getenv('X_ZEND_JOB_ID')) {
-            return (int) getenv('X_ZEND_JOB_ID');
+        if(getenv(self::ZEND_JOB_ID) !== false) {
+            return (int) getenv(self::ZEND_JOB_ID);
         }
 
         return null;
@@ -558,6 +559,22 @@ class ZendJobQueue
         if (isset($options['env']) && is_array($options['env'])) {
             foreach ($options['env'] as $key => $value) {
                 $job->setEnv((string) $key, (string) $value);
+            }
+        }
+
+        // If the job is already running under ZendHQ Job Queue, we need to set the child queue to prevent deadlocks.
+        if(!isset($options['queue_name'])) {
+            $zendJobId = getenv(self::ZEND_JOB_ID);
+            if($zendJobId !== false) {
+                $runQueue = getenv(self::ZEND_JOB_RUN_QUEUE);
+                if($runQueue === false || $runQueue == self::DEFAULT_QUEUE_NAME) {
+                    $queueName = self::INTERNAL_QUEUE_NAME;
+                }
+                else {
+                    $queueName = uniqid('intq.' . intval($zendJobId) . '.', true);
+                }
+                $options['queue_name'] = $queueName;
+                $job->setEnv(self::ZEND_JOB_RUN_QUEUE, $queueName);
             }
         }
 
@@ -1114,12 +1131,7 @@ class ZendJobQueue
      */
     private function scheduleJob(ZendPhpJQ\Queue $queue, ZendPhpJQ\JobDefinition $job, ?ZendPhpJQ\Schedule $schedule, ZendPhpJQ\JobOptions $options): ZendPhpJQ\Job
     {
-        $job = $queue->scheduleJob( $job, $schedule, $options);
-        if ($queue === $this->internalQueue) {
-            $this->internalJobIds[] = $job->getId();
-        }
-
-        return $job;
+        return $queue->scheduleJob( $job, $schedule, $options);
     }
 
     /**
@@ -1191,21 +1203,12 @@ class ZendJobQueue
     private function retrieveQueueFromOptions(array $options): ZendPhpJQ\Queue
     {
         if (! isset($options['queue_name']) || empty($options['queue_name'])) {
-            if($zendJobId = getenv('X_ZEND_JOB_ID')) {
-                // If the X_ZEND_JOB_ID environment variable is set, then this script is running
-                // under the ZendHQ job queue manager. We should create an internal queue to prevent deadlock.
-                if(!$this->internalQueue) {
-                    $this->internalQueue = $this->jobQueue->addQueue(uniqid('intq.'.intval($zendJobId).'.', true));
-                }
-                return $this->internalQueue;
-            }
-
             return $this->jobQueue->getDefaultQueue();
         }
 
         return $this->jobQueue->hasQueue($options['queue_name'])
-            ? $this->jobQueue->addQueue($options['queue_name'])
-            : $this->jobQueue->getQueue($options['queue_name']);
+            ? $this->jobQueue->getQueue($options['queue_name'])
+            : $this->jobQueue->addQueue($options['queue_name']);
     }
 
     private function mapJobTypeToConstant(ZendPhpJQ\Job $job): int
@@ -1835,25 +1838,6 @@ class ZendJobQueue
             case $status === ZendPhpJQ\Queue::STATUS_RUNNING:
             default:
                 return self::STATUS_RUNNING;
-        }
-    }
-
-    public function __destruct()
-    {
-        if ($this->internalQueue) {
-            $this->internalQueue->suspend(30);
-
-            // check if there are any jobs in the internal queue that have failed
-            foreach ($this->internalJobIds as $jobId) {
-                $job = $this->getJobStatus($jobId);
-                if(in_array($job['status'], [self::STATUS_FAILED, self::STATUS_LOGICALLY_FAILED])) {
-                    // If the job failed, we keep the internal queue for debugging purposes
-                    return;
-                }
-            }
-
-            $this->jobQueue->deleteQueue($this->internalQueue);
-            $this->internalQueue = null;
         }
     }
 }

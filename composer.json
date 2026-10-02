@@ -12,8 +12,8 @@
     "type": "library",
     "authors": [
         {
-            "name":     "Slavey Karadzhov",
-            "email":    "skaradzhov@perforce.com"
+            "name": "Slavey Karadzhov",
+            "email": "skaradzhov@perforce.com"
         },
         {
             "name": "Matthew Weier O'Phinney",
@@ -21,11 +21,11 @@
         }
     ],
     "require": {
-        "php": "^7.2 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0"
+        "php": "^7.2 || ^8.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8.5.33 || ^9.5.11",
-        "laminas/laminas-coding-standard": "~2.1.0"
+        "phpunit/phpunit": "^11.5 || ^12.0",
+        "laminas/laminas-coding-standard": "^3.1"
     },
     "autoload": {
         "files": [

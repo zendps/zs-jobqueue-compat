@@ -2,6 +2,10 @@
 
 This package provides a compatibility layer for the Zend Server JobQueue PHP API, allowing usage against the ZendHQ JobQueue PHP API.
 
+## Requirements
+
+- PHP 8.4 (ZendPHP) with the `zendhq` extension providing the `ZendHQ\JobQueue` API
+
 ## Installation
 
 1. Add the repository to your Composer configuration:

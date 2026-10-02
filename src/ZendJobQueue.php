@@ -1235,6 +1235,9 @@ class ZendJobQueue
 
             case $priority === ZendPhpJQ\JobOptions::PRIORITY_URGENT:
                 return self::PRIORITY_URGENT;
+
+            default:
+                return self::PRIORITY_NORMAL;
         }
     }
 
@@ -1724,7 +1727,7 @@ class ZendJobQueue
             $sortDirection = self::SORT_ASC;
         }
 
-        usort($jobs, function (Job $a, Job $b) use ($sortBy, $sortDirection): int {
+        usort($jobs, function (ZendPhpJQ\Job $a, ZendPhpJQ\Job $b) use ($sortBy, $sortDirection): int {
             $aDefinition = $a->getJobDefinition();
             $bDefinition = $b->getJobDefinition();
 
@@ -1735,15 +1738,15 @@ class ZendJobQueue
                         : $b->getId() <=> $a->getId();
 
                 case $sortBy === self::SORT_BY_TYPE:
-                    $aType = $aDefinition === ZendPhpJQ\CLIJob ? self::TYPE_CLI : self::TYPE_HTTP;
-                    $bType = $bDefinition === ZendPhpJQ\CLIJob ? self::TYPE_CLI : self::TYPE_HTTP;
+                    $aType = $aDefinition instanceof ZendPhpJQ\CLIJob ? self::TYPE_CLI : self::TYPE_HTTP;
+                    $bType = $bDefinition instanceof ZendPhpJQ\CLIJob ? self::TYPE_CLI : self::TYPE_HTTP;
                     return $sortDirection === self::SORT_ASC
                         ? $aType <=> $bType
                         : $bType <=> $aType;
 
                 case $sortBy === self::SORT_BY_SCRIPT:
-                    $aScript = $aDefinition === ZendPhpJQ\CLIJob ? $aDefinition->getCommand() : $aDefinition->getUrl();
-                    $bScript = $bDefinition === ZendPhpJQ\CLIJob ? $bDefinition->getCommand() : $bDefinition->getUrl();
+                    $aScript = $aDefinition instanceof ZendPhpJQ\CLIJob ? $aDefinition->getCommand() : $aDefinition->getUrl();
+                    $bScript = $bDefinition instanceof ZendPhpJQ\CLIJob ? $bDefinition->getCommand() : $bDefinition->getUrl();
                     return $sortDirection === self::SORT_ASC
                         ? $aScript <=> $bScript
                         : $bScript <=> $aScript;
